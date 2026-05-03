@@ -7,11 +7,11 @@ namespace OrdersAPI.Handlers;
 
 public class GetOrderByIdQueryHandler :IQueryHandler<GetOrderByIdQuery, OrderDto>, IQueryHandler<GetAllOrders, List<OrderDto>>
 {
-    private readonly AppDbContext _appDbContext;
+    private readonly ReadDbContext _context;
 
-    public GetOrderByIdQueryHandler(AppDbContext appDbContext)
+    public GetOrderByIdQueryHandler(ReadDbContext context)
     {
-        _appDbContext = appDbContext;
+        _context = context;
     }
     //public static async Task<Order?> Handle(GetOrderByIdQuery query, AppDbContext dbContext)
     //{
@@ -25,13 +25,13 @@ public class GetOrderByIdQueryHandler :IQueryHandler<GetOrderByIdQuery, OrderDto
 
     public async Task<OrderDto?> HandleAsync(GetOrderByIdQuery query)
     {
-        var order = await _appDbContext.Orders.FindAsync(query.Id);
+        var order = await _context.Orders.FindAsync(query.Id);
         if (order == null) return null;
         return new OrderDto(order.Id, order.FirstName, order.LastName, order.CreatedAt, order.TotalAmount);
     }
 
     public Task<List<OrderDto>?> HandleAsync(GetAllOrders query)
     {
-        return _appDbContext.Orders.Select(order => new OrderDto(order.Id, order.FirstName, order.LastName, order.CreatedAt, order.TotalAmount)).ToListAsync()!;
+        return _context.Orders.Select(order => new OrderDto(order.Id, order.FirstName, order.LastName, order.CreatedAt, order.TotalAmount)).ToListAsync()!;
     }
 }

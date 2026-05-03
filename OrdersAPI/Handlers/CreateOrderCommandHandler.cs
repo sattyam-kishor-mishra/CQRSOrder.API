@@ -2,18 +2,21 @@ using FluentValidation;
 using OrdersAPI.Commands;
 using OrdersAPI.Data;
 using OrdersAPI.Dtos;
+using OrdersAPI.Events;
 using OrdersAPI.Models;
 namespace OrdersAPI.Handlers;
 
 public class CreateOrderCommandHandler :ICommandHandler<CreateOrderCommand, OrderDto>
 {
-    private readonly AppDbContext _appDbContext;
+    private readonly WriteDbContext _context;
     private readonly IValidator<CreateOrderCommand> _validator;
+    private readonly IEventPublisher _eventPublisher;
 
-    public CreateOrderCommandHandler(AppDbContext appDbContext, IValidator<CreateOrderCommand> validator)
+    public CreateOrderCommandHandler(WriteDbContext context, IValidator<CreateOrderCommand> validator, IEventPublisher eventPublisher)
     {
-        _appDbContext = appDbContext;
+        _context = context;       
         _validator = validator;
+        _eventPublisher = eventPublisher;        
     }
     //public static async Task<Order> Handle(CreateOrderCommand command, AppDbContext dbContext)
     //{
@@ -45,8 +48,18 @@ public class CreateOrderCommandHandler :ICommandHandler<CreateOrderCommand, Orde
             TotalAmount = command.TotalAmount
         };
 
-        await _appDbContext.Orders.AddAsync(order);
-        await _appDbContext.SaveChangesAsync();
+        await _context.Orders.AddAsync(order);
+        await _context.SaveChangesAsync();
+
+        var orderCreatedEvent = new OrderCreatedEvent
+            (
+                order.Id,
+                order.FirstName,
+                order.LastName,
+                order.TotalAmount
+            );
+
+        await _eventPublisher.PublishAsync(orderCreatedEvent);
 
         return new OrderDto(order.Id, order.FirstName, order.LastName, order.CreatedAt, order.TotalAmount);
     }
